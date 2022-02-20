@@ -5,12 +5,9 @@ const deepmerge = require('deepmerge');
 const parseSrcset = require('parse-srcset');
 const { parse: postcssParse } = require('postcss');
 // Tags that can conceivably represent stand-alone media.
-const mediaTags = [
-  'img', 'audio', 'video', 'picture', 'svg',
-  'object', 'map', 'iframe', 'embed'
-];
+const mediaTags = ['img', 'audio', 'video', 'picture', 'svg', 'object', 'map', 'iframe', 'embed'];
 // Tags that are inherently vulnerable to being used in XSS attacks.
-const vulnerableTags = [ 'script', 'style' ];
+const vulnerableTags = ['script', 'style'];
 
 function each(obj, cb) {
   if (obj) {
@@ -22,13 +19,13 @@ function each(obj, cb) {
 
 // Avoid false positives with .__proto__, .hasOwnProperty, etc.
 function has(obj, key) {
-  return ({}).hasOwnProperty.call(obj, key);
+  return {}.hasOwnProperty.call(obj, key);
 }
 
 // Returns those elements of `a` for which `cb(a)` returns truthy
 function filter(a, cb) {
   const n = [];
-  each(a, function(v) {
+  each(a, function (v) {
     if (cb(v)) {
       n.push(v);
     }
@@ -46,18 +43,15 @@ function isEmptyObject(obj) {
 }
 
 function stringifySrcset(parsedSrcset) {
-  return parsedSrcset.map(function(part) {
-    if (!part.url) {
-      throw new Error('URL missing');
-    }
+  return parsedSrcset
+    .map(function (part) {
+      if (!part.url) {
+        throw new Error('URL missing');
+      }
 
-    return (
-      part.url +
-      (part.w ? ` ${part.w}w` : '') +
-      (part.h ? ` ${part.h}h` : '') +
-      (part.d ? ` ${part.d}x` : '')
-    );
-  }).join(', ');
+      return part.url + (part.w ? ` ${part.w}w` : '') + (part.h ? ` ${part.h}h` : '') + (part.d ? ` ${part.d}x` : '');
+    })
+    .join(', ');
 }
 
 module.exports = sanitizeHtml;
@@ -96,14 +90,14 @@ function sanitizeHtml(html, options, _recursing) {
     this.text = ''; // Node inner text
     this.mediaChildren = [];
 
-    this.updateParentNodeText = function() {
+    this.updateParentNodeText = function () {
       if (stack.length) {
         const parentFrame = stack[stack.length - 1];
         parentFrame.text += that.text;
       }
     };
 
-    this.updateParentNodeMediaChildren = function() {
+    this.updateParentNodeMediaChildren = function () {
       if (stack.length && mediaTags.includes(this.tag)) {
         const parentFrame = stack[stack.length - 1];
         parentFrame.mediaChildren.push(this.tag);
@@ -116,11 +110,10 @@ function sanitizeHtml(html, options, _recursing) {
 
   // vulnerableTags
   vulnerableTags.forEach(function (tag) {
-    if (
-      options.allowedTags && options.allowedTags.indexOf(tag) > -1 &&
-      !options.allowVulnerableTags
-    ) {
-      console.warn(`\n\n⚠️ Your \`allowedTags\` option includes, \`${tag}\`, which is inherently\nvulnerable to XSS attacks. Please remove it from \`allowedTags\`.\nOr, to disable this warning, add the \`allowVulnerableTags\` option\nand ensure you are accounting for this risk.\n\n`);
+    if (options.allowedTags && options.allowedTags.indexOf(tag) > -1 && !options.allowVulnerableTags) {
+      console.warn(
+        `\n\n⚠️ Your \`allowedTags\` option includes, \`${tag}\`, which is inherently\nvulnerable to XSS attacks. Please remove it from \`allowedTags\`.\nOr, to disable this warning, add the \`allowVulnerableTags\` option\nand ensure you are accounting for this risk.\n\n`
+      );
     }
   });
 
@@ -128,21 +121,16 @@ function sanitizeHtml(html, options, _recursing) {
   // the text when the tag is disallowed makes sense for other reasons.
   // If we are not allowing these tags, we should drop their content too.
   // For other tags you would drop the tag but keep its content.
-  const nonTextTagsArray = options.nonTextTags || [
-    'script',
-    'style',
-    'textarea',
-    'option'
-  ];
+  const nonTextTagsArray = options.nonTextTags || ['script', 'style', 'textarea', 'option'];
   let allowedAttributesMap;
   let allowedAttributesGlobMap;
   if (options.allowedAttributes) {
     allowedAttributesMap = {};
     allowedAttributesGlobMap = {};
-    each(options.allowedAttributes, function(attributes, tag) {
+    each(options.allowedAttributes, function (attributes, tag) {
       allowedAttributesMap[tag] = [];
       const globRegex = [];
-      attributes.forEach(function(obj) {
+      attributes.forEach(function (obj) {
         if (typeof obj === 'string' && obj.indexOf('*') >= 0) {
           globRegex.push(escapeStringRegexp(obj).replace(/\\\*/g, '.*'));
         } else {
@@ -157,7 +145,7 @@ function sanitizeHtml(html, options, _recursing) {
   const allowedClassesMap = {};
   const allowedClassesGlobMap = {};
   const allowedClassesRegexMap = {};
-  each(options.allowedClasses, function(classes, tag) {
+  each(options.allowedClasses, function (classes, tag) {
     // Implicitly allows the class attribute
     if (allowedAttributesMap) {
       if (!has(allowedAttributesMap, tag)) {
@@ -169,7 +157,7 @@ function sanitizeHtml(html, options, _recursing) {
     allowedClassesMap[tag] = [];
     allowedClassesRegexMap[tag] = [];
     const globRegex = [];
-    classes.forEach(function(obj) {
+    classes.forEach(function (obj) {
       if (typeof obj === 'string' && obj.indexOf('*') >= 0) {
         globRegex.push(escapeStringRegexp(obj).replace(/\\\*/g, '.*'));
       } else if (obj instanceof RegExp) {
@@ -185,7 +173,7 @@ function sanitizeHtml(html, options, _recursing) {
 
   const transformTagsMap = {};
   let transformTagsAll;
-  each(options.transformTags, function(transform, tag) {
+  each(options.transformTags, function (transform, tag) {
     let transFun;
     if (typeof transform === 'function') {
       transFun = transform;
@@ -209,382 +197,393 @@ function sanitizeHtml(html, options, _recursing) {
 
   initializeState();
 
-  const parser = new htmlparser.Parser({
-    onopentag: function(name, attribs) {
-      // If `enforceHtmlBoundary` is `true` and this has found the opening
-      // `html` tag, reset the state.
-      if (options.enforceHtmlBoundary && name === 'html') {
-        initializeState();
-      }
-
-      if (skipText) {
-        skipTextDepth++;
-        return;
-      }
-      const frame = new Frame(name, attribs);
-      stack.push(frame);
-
-      let skip = false;
-      const hasText = !!frame.text;
-      let transformedTag;
-      if (has(transformTagsMap, name)) {
-        transformedTag = transformTagsMap[name](name, attribs);
-
-        frame.attribs = attribs = transformedTag.attribs;
-
-        if (transformedTag.text !== undefined) {
-          frame.innerText = transformedTag.text;
+  const parser = new htmlparser.Parser(
+    {
+      onopentag: function (name, attribs) {
+        // If `enforceHtmlBoundary` is `true` and this has found the opening
+        // `html` tag, reset the state.
+        if (options.enforceHtmlBoundary && name === 'html') {
+          initializeState();
         }
 
-        if (name !== transformedTag.tagName) {
-          frame.name = name = transformedTag.tagName;
-          transformMap[depth] = transformedTag.tagName;
-        }
-      }
-      if (transformTagsAll) {
-        transformedTag = transformTagsAll(name, attribs);
-
-        frame.attribs = attribs = transformedTag.attribs;
-        if (name !== transformedTag.tagName) {
-          frame.name = name = transformedTag.tagName;
-          transformMap[depth] = transformedTag.tagName;
-        }
-      }
-
-      if ((options.allowedTags && options.allowedTags.indexOf(name) === -1) || (options.disallowedTagsMode === 'recursiveEscape' && !isEmptyObject(skipMap)) || (options.nestingLimit != null && depth >= options.nestingLimit)) {
-        skip = true;
-        skipMap[depth] = true;
-        if (options.disallowedTagsMode === 'discard') {
-          if (nonTextTagsArray.indexOf(name) !== -1) {
-            skipText = true;
-            skipTextDepth = 1;
-          }
-        }
-        skipMap[depth] = true;
-      }
-      depth++;
-      if (skip) {
-        if (options.disallowedTagsMode === 'discard') {
-          // We want the contents but not this tag
+        if (skipText) {
+          skipTextDepth++;
           return;
         }
-        tempResult = result;
-        result = '';
-      }
-      result += '<' + name;
+        const frame = new Frame(name, attribs);
+        stack.push(frame);
 
-      if (name === 'script') {
-        if (options.allowedScriptHostnames || options.allowedScriptDomains) {
-          frame.innerText = '';
+        let skip = false;
+        const hasText = !!frame.text;
+        let transformedTag;
+        if (has(transformTagsMap, name)) {
+          transformedTag = transformTagsMap[name](name, attribs);
+
+          frame.attribs = attribs = transformedTag.attribs;
+
+          if (transformedTag.text !== undefined) {
+            frame.innerText = transformedTag.text;
+          }
+
+          if (name !== transformedTag.tagName) {
+            frame.name = name = transformedTag.tagName;
+            transformMap[depth] = transformedTag.tagName;
+          }
         }
-      }
+        if (transformTagsAll) {
+          transformedTag = transformTagsAll(name, attribs);
 
-      if (!allowedAttributesMap || has(allowedAttributesMap, name) || allowedAttributesMap['*']) {
-        each(attribs, function(value, a) {
-          if (!VALID_HTML_ATTRIBUTE_NAME.test(a)) {
-            // This prevents part of an attribute name in the output from being
-            // interpreted as the end of an attribute, or end of a tag.
-            delete frame.attribs[a];
+          frame.attribs = attribs = transformedTag.attribs;
+          if (name !== transformedTag.tagName) {
+            frame.name = name = transformedTag.tagName;
+            transformMap[depth] = transformedTag.tagName;
+          }
+        }
+
+        if (
+          (options.allowedTags && options.allowedTags.indexOf(name) === -1) ||
+          (options.disallowedTagsMode === 'recursiveEscape' && !isEmptyObject(skipMap)) ||
+          (options.nestingLimit != null && depth >= options.nestingLimit)
+        ) {
+          skip = true;
+          skipMap[depth] = true;
+          if (options.disallowedTagsMode === 'discard') {
+            if (nonTextTagsArray.indexOf(name) !== -1) {
+              skipText = true;
+              skipTextDepth = 1;
+            }
+          }
+          skipMap[depth] = true;
+        }
+        depth++;
+        if (skip) {
+          if (options.disallowedTagsMode === 'discard') {
+            // We want the contents but not this tag
             return;
           }
-          let parsed;
-          // check allowedAttributesMap for the element and attribute and modify the value
-          // as necessary if there are specific values defined.
-          let passedAllowedAttributesMapCheck = false;
-          if (!allowedAttributesMap ||
-            (has(allowedAttributesMap, name) && allowedAttributesMap[name].indexOf(a) !== -1) ||
-            (allowedAttributesMap['*'] && allowedAttributesMap['*'].indexOf(a) !== -1) ||
-            (has(allowedAttributesGlobMap, name) && allowedAttributesGlobMap[name].test(a)) ||
-            (allowedAttributesGlobMap['*'] && allowedAttributesGlobMap['*'].test(a))) {
-            passedAllowedAttributesMapCheck = true;
-          } else if (allowedAttributesMap && allowedAttributesMap[name]) {
-            for (const o of allowedAttributesMap[name]) {
-              if (isPlainObject(o) && o.name && (o.name === a)) {
-                passedAllowedAttributesMapCheck = true;
-                let newValue = '';
-                if (o.multiple === true) {
-                  // verify the values that are allowed
-                  const splitStrArray = value.split(' ');
-                  for (const s of splitStrArray) {
-                    if (o.values.indexOf(s) !== -1) {
-                      if (newValue === '') {
-                        newValue = s;
-                      } else {
-                        newValue += ' ' + s;
+          tempResult = result;
+          result = '';
+        }
+        result += '<' + name;
+
+        if (name === 'script') {
+          if (options.allowedScriptHostnames || options.allowedScriptDomains) {
+            frame.innerText = '';
+          }
+        }
+
+        if (!allowedAttributesMap || has(allowedAttributesMap, name) || allowedAttributesMap['*']) {
+          each(attribs, function (value, a) {
+            if (!VALID_HTML_ATTRIBUTE_NAME.test(a)) {
+              // This prevents part of an attribute name in the output from being
+              // interpreted as the end of an attribute, or end of a tag.
+              delete frame.attribs[a];
+              return;
+            }
+            let parsed;
+            // check allowedAttributesMap for the element and attribute and modify the value
+            // as necessary if there are specific values defined.
+            let passedAllowedAttributesMapCheck = false;
+            if (
+              !allowedAttributesMap ||
+              (has(allowedAttributesMap, name) && allowedAttributesMap[name].indexOf(a) !== -1) ||
+              (allowedAttributesMap['*'] && allowedAttributesMap['*'].indexOf(a) !== -1) ||
+              (has(allowedAttributesGlobMap, name) && allowedAttributesGlobMap[name].test(a)) ||
+              (allowedAttributesGlobMap['*'] && allowedAttributesGlobMap['*'].test(a))
+            ) {
+              passedAllowedAttributesMapCheck = true;
+            } else if (allowedAttributesMap && allowedAttributesMap[name]) {
+              for (const o of allowedAttributesMap[name]) {
+                if (isPlainObject(o) && o.name && o.name === a) {
+                  passedAllowedAttributesMapCheck = true;
+                  let newValue = '';
+                  if (o.multiple === true) {
+                    // verify the values that are allowed
+                    const splitStrArray = value.split(' ');
+                    for (const s of splitStrArray) {
+                      if (o.values.indexOf(s) !== -1) {
+                        if (newValue === '') {
+                          newValue = s;
+                        } else {
+                          newValue += ' ' + s;
+                        }
                       }
                     }
+                  } else if (o.values.indexOf(value) >= 0) {
+                    // verified an allowed value matches the entire attribute value
+                    newValue = value;
                   }
-                } else if (o.values.indexOf(value) >= 0) {
-                  // verified an allowed value matches the entire attribute value
-                  newValue = value;
+                  value = newValue;
                 }
-                value = newValue;
               }
             }
-          }
-          if (passedAllowedAttributesMapCheck) {
-            if (options.allowedSchemesAppliedToAttributes.indexOf(a) !== -1) {
-              if (naughtyHref(name, value)) {
-                delete frame.attribs[a];
-                return;
-              }
-            }
-
-            if (name === 'script' && a === 'src') {
-
-              let allowed = true;
-
-              try {
-                const parsed = new URL(value);
-
-                if (options.allowedScriptHostnames || options.allowedScriptDomains) {
-                  const allowedHostname = (options.allowedScriptHostnames || []).find(function (hostname) {
-                    return hostname === parsed.hostname;
-                  });
-                  const allowedDomain = (options.allowedScriptDomains || []).find(function(domain) {
-                    return parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`);
-                  });
-                  allowed = allowedHostname || allowedDomain;
-                }
-              } catch (e) {
-                allowed = false;
-              }
-
-              if (!allowed) {
-                delete frame.attribs[a];
-                return;
-              }
-            }
-
-            if (name === 'iframe' && a === 'src') {
-              let allowed = true;
-              try {
-                // Chrome accepts \ as a substitute for / in the // at the
-                // start of a URL, so rewrite accordingly to prevent exploit.
-                // Also drop any whitespace at that point in the URL
-                value = value.replace(/^(\w+:)?\s*[\\/]\s*[\\/]/, '$1//');
-                if (value.startsWith('relative:')) {
-                  // An attempt to exploit our workaround for base URLs being
-                  // mandatory for relative URL validation in the WHATWG
-                  // URL parser, reject it
-                  throw new Error('relative: exploit attempt');
-                }
-                // naughtyHref is in charge of whether protocol relative URLs
-                // are cool. Here we are concerned just with allowed hostnames and
-                // whether to allow relative URLs.
-                //
-                // Build a placeholder "base URL" against which any reasonable
-                // relative URL may be parsed successfully
-                let base = 'relative://relative-site';
-                for (let i = 0; (i < 100); i++) {
-                  base += `/${i}`;
-                }
-                const parsed = new URL(value, base);
-                const isRelativeUrl = parsed && parsed.hostname === 'relative-site' && parsed.protocol === 'relative:';
-                if (isRelativeUrl) {
-                  // default value of allowIframeRelativeUrls is true
-                  // unless allowedIframeHostnames or allowedIframeDomains specified
-                  allowed = has(options, 'allowIframeRelativeUrls')
-                    ? options.allowIframeRelativeUrls
-                    : (!options.allowedIframeHostnames && !options.allowedIframeDomains);
-                } else if (options.allowedIframeHostnames || options.allowedIframeDomains) {
-                  const allowedHostname = (options.allowedIframeHostnames || []).find(function (hostname) {
-                    return hostname === parsed.hostname;
-                  });
-                  const allowedDomain = (options.allowedIframeDomains || []).find(function(domain) {
-                    return parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`);
-                  });
-                  allowed = allowedHostname || allowedDomain;
-                }
-              } catch (e) {
-                // Unparseable iframe src
-                allowed = false;
-              }
-              if (!allowed) {
-                delete frame.attribs[a];
-                return;
-              }
-            }
-            if (a === 'srcset') {
-              try {
-                parsed = parseSrcset(value);
-                parsed.forEach(function(value) {
-                  if (naughtyHref('srcset', value.url)) {
-                    value.evil = true;
-                  }
-                });
-                parsed = filter(parsed, function(v) {
-                  return !v.evil;
-                });
-                if (!parsed.length) {
+            if (passedAllowedAttributesMapCheck) {
+              if (options.allowedSchemesAppliedToAttributes.indexOf(a) !== -1) {
+                if (naughtyHref(name, value)) {
                   delete frame.attribs[a];
                   return;
-                } else {
-                  value = stringifySrcset(filter(parsed, function(v) {
+                }
+              }
+
+              if (name === 'script' && a === 'src') {
+                let allowed = true;
+
+                try {
+                  const parsed = new URL(value);
+
+                  if (options.allowedScriptHostnames || options.allowedScriptDomains) {
+                    const allowedHostname = (options.allowedScriptHostnames || []).find(function (hostname) {
+                      return hostname === parsed.hostname;
+                    });
+                    const allowedDomain = (options.allowedScriptDomains || []).find(function (domain) {
+                      return parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`);
+                    });
+                    allowed = allowedHostname || allowedDomain;
+                  }
+                } catch (e) {
+                  allowed = false;
+                }
+
+                if (!allowed) {
+                  delete frame.attribs[a];
+                  return;
+                }
+              }
+
+              if (name === 'iframe' && a === 'src') {
+                let allowed = true;
+                try {
+                  // Chrome accepts \ as a substitute for / in the // at the
+                  // start of a URL, so rewrite accordingly to prevent exploit.
+                  // Also drop any whitespace at that point in the URL
+                  value = value.replace(/^(\w+:)?\s*[\\/]\s*[\\/]/, '$1//');
+                  if (value.startsWith('relative:')) {
+                    // An attempt to exploit our workaround for base URLs being
+                    // mandatory for relative URL validation in the WHATWG
+                    // URL parser, reject it
+                    throw new Error('relative: exploit attempt');
+                  }
+                  // naughtyHref is in charge of whether protocol relative URLs
+                  // are cool. Here we are concerned just with allowed hostnames and
+                  // whether to allow relative URLs.
+                  //
+                  // Build a placeholder "base URL" against which any reasonable
+                  // relative URL may be parsed successfully
+                  let base = 'relative://relative-site';
+                  for (let i = 0; i < 100; i++) {
+                    base += `/${i}`;
+                  }
+                  const parsed = new URL(value, base);
+                  const isRelativeUrl =
+                    parsed && parsed.hostname === 'relative-site' && parsed.protocol === 'relative:';
+                  if (isRelativeUrl) {
+                    // default value of allowIframeRelativeUrls is true
+                    // unless allowedIframeHostnames or allowedIframeDomains specified
+                    allowed = has(options, 'allowIframeRelativeUrls')
+                      ? options.allowIframeRelativeUrls
+                      : !options.allowedIframeHostnames && !options.allowedIframeDomains;
+                  } else if (options.allowedIframeHostnames || options.allowedIframeDomains) {
+                    const allowedHostname = (options.allowedIframeHostnames || []).find(function (hostname) {
+                      return hostname === parsed.hostname;
+                    });
+                    const allowedDomain = (options.allowedIframeDomains || []).find(function (domain) {
+                      return parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`);
+                    });
+                    allowed = allowedHostname || allowedDomain;
+                  }
+                } catch (e) {
+                  // Unparseable iframe src
+                  allowed = false;
+                }
+                if (!allowed) {
+                  delete frame.attribs[a];
+                  return;
+                }
+              }
+              if (a === 'srcset') {
+                try {
+                  parsed = parseSrcset(value);
+                  parsed.forEach(function (value) {
+                    if (naughtyHref('srcset', value.url)) {
+                      value.evil = true;
+                    }
+                  });
+                  parsed = filter(parsed, function (v) {
                     return !v.evil;
-                  }));
-                  frame.attribs[a] = value;
-                }
-              } catch (e) {
-                // Unparseable srcset
-                delete frame.attribs[a];
-                return;
-              }
-            }
-            if (a === 'class') {
-              const allowedSpecificClasses = allowedClassesMap[name];
-              const allowedWildcardClasses = allowedClassesMap['*'];
-              const allowedSpecificClassesGlob = allowedClassesGlobMap[name];
-              const allowedSpecificClassesRegex = allowedClassesRegexMap[name];
-              const allowedWildcardClassesGlob = allowedClassesGlobMap['*'];
-              const allowedClassesGlobs = [
-                allowedSpecificClassesGlob,
-                allowedWildcardClassesGlob
-              ]
-                .concat(allowedSpecificClassesRegex)
-                .filter(function (t) {
-                  return t;
-                });
-              if (allowedSpecificClasses && allowedWildcardClasses) {
-                value = filterClasses(value, deepmerge(allowedSpecificClasses, allowedWildcardClasses), allowedClassesGlobs);
-              } else {
-                value = filterClasses(value, allowedSpecificClasses || allowedWildcardClasses, allowedClassesGlobs);
-              }
-              if (!value.length) {
-                delete frame.attribs[a];
-                return;
-              }
-            }
-            if (a === 'style') {
-              try {
-                const abstractSyntaxTree = postcssParse(name + ' {' + value + '}');
-                const filteredAST = filterCss(abstractSyntaxTree, options.allowedStyles);
-
-                value = stringifyStyleAttributes(filteredAST);
-
-                if (value.length === 0) {
+                  });
+                  if (!parsed.length) {
+                    delete frame.attribs[a];
+                    return;
+                  } else {
+                    value = stringifySrcset(
+                      filter(parsed, function (v) {
+                        return !v.evil;
+                      })
+                    );
+                    frame.attribs[a] = value;
+                  }
+                } catch (e) {
+                  // Unparseable srcset
                   delete frame.attribs[a];
                   return;
                 }
-              } catch (e) {
-                delete frame.attribs[a];
-                return;
               }
+              if (a === 'class') {
+                const allowedSpecificClasses = allowedClassesMap[name];
+                const allowedWildcardClasses = allowedClassesMap['*'];
+                const allowedSpecificClassesGlob = allowedClassesGlobMap[name];
+                const allowedSpecificClassesRegex = allowedClassesRegexMap[name];
+                const allowedWildcardClassesGlob = allowedClassesGlobMap['*'];
+                const allowedClassesGlobs = [allowedSpecificClassesGlob, allowedWildcardClassesGlob]
+                  .concat(allowedSpecificClassesRegex)
+                  .filter(function (t) {
+                    return t;
+                  });
+                if (allowedSpecificClasses && allowedWildcardClasses) {
+                  value = filterClasses(
+                    value,
+                    deepmerge(allowedSpecificClasses, allowedWildcardClasses),
+                    allowedClassesGlobs
+                  );
+                } else {
+                  value = filterClasses(value, allowedSpecificClasses || allowedWildcardClasses, allowedClassesGlobs);
+                }
+                if (!value.length) {
+                  delete frame.attribs[a];
+                  return;
+                }
+              }
+              if (a === 'style') {
+                try {
+                  const abstractSyntaxTree = postcssParse(name + ' {' + value + '}');
+                  const filteredAST = filterCss(abstractSyntaxTree, options.allowedStyles);
+
+                  value = stringifyStyleAttributes(filteredAST);
+
+                  if (value.length === 0) {
+                    delete frame.attribs[a];
+                    return;
+                  }
+                } catch (e) {
+                  delete frame.attribs[a];
+                  return;
+                }
+              }
+              result += ' ' + a;
+              if (value && value.length) {
+                result += '="' + escapeHtml(value, true) + '"';
+              }
+            } else {
+              delete frame.attribs[a];
             }
-            result += ' ' + a;
-            if (value && value.length) {
-              result += '="' + escapeHtml(value, true) + '"';
-            }
-          } else {
-            delete frame.attribs[a];
-          }
-        });
-      }
-      if (options.selfClosing.indexOf(name) !== -1) {
-        result += ' />';
-      } else {
-        result += '>';
-        if (frame.innerText && !hasText && !options.textFilter) {
-          result += escapeHtml(frame.innerText);
-          addedText = true;
+          });
         }
-      }
-      if (skip) {
-        result = tempResult + escapeHtml(result);
-        tempResult = '';
-      }
-    },
-    ontext: function(text) {
-      if (skipText) {
-        return;
-      }
-      const lastFrame = stack[stack.length - 1];
-      let tag;
-
-      if (lastFrame) {
-        tag = lastFrame.tag;
-        // If inner text was set by transform function then let's use it
-        text = lastFrame.innerText !== undefined ? lastFrame.innerText : text;
-      }
-
-      if (options.disallowedTagsMode === 'discard' && ((tag === 'script') || (tag === 'style'))) {
-        // htmlparser2 gives us these as-is. Escaping them ruins the content. Allowing
-        // script tags is, by definition, game over for XSS protection, so if that's
-        // your concern, don't allow them. The same is essentially true for style tags
-        // which have their own collection of XSS vectors.
-        result += text;
-      } else {
-        const escaped = escapeHtml(text, false);
-        if (options.textFilter && !addedText) {
-          result += options.textFilter(escaped, tag);
-        } else if (!addedText) {
-          result += escaped;
-        }
-      }
-      if (stack.length) {
-        const frame = stack[stack.length - 1];
-        frame.text += text;
-      }
-    },
-    onclosetag: function(name) {
-
-      if (skipText) {
-        skipTextDepth--;
-        if (!skipTextDepth) {
-          skipText = false;
+        if (options.selfClosing.indexOf(name) !== -1) {
+          result += ' />';
         } else {
-          return;
+          result += '>';
+          if (frame.innerText && !hasText && !options.textFilter) {
+            result += escapeHtml(frame.innerText);
+            addedText = true;
+          }
         }
-      }
-
-      const frame = stack.pop();
-      if (!frame) {
-        // Do not crash on bad markup
-        return;
-      }
-      skipText = options.enforceHtmlBoundary ? name === 'html' : false;
-      depth--;
-      const skip = skipMap[depth];
-      if (skip) {
-        delete skipMap[depth];
-        if (options.disallowedTagsMode === 'discard') {
-          frame.updateParentNodeText();
-          return;
-        }
-        tempResult = result;
-        result = '';
-      }
-
-      if (transformMap[depth]) {
-        name = transformMap[depth];
-        delete transformMap[depth];
-      }
-
-      if (options.exclusiveFilter && options.exclusiveFilter(frame)) {
-        result = result.substr(0, frame.tagPosition);
-        return;
-      }
-
-      frame.updateParentNodeMediaChildren();
-      frame.updateParentNodeText();
-
-      if (options.selfClosing.indexOf(name) !== -1) {
-        // Already output />
         if (skip) {
-          result = tempResult;
+          result = tempResult + escapeHtml(result);
           tempResult = '';
         }
-        return;
-      }
+      },
+      ontext: function (text) {
+        if (skipText) {
+          return;
+        }
+        const lastFrame = stack[stack.length - 1];
+        let tag;
 
-      result += '</' + name + '>';
-      if (skip) {
-        result = tempResult + escapeHtml(result);
-        tempResult = '';
-      }
-      addedText = false;
-    }
-  }, options.parser);
+        if (lastFrame) {
+          tag = lastFrame.tag;
+          // If inner text was set by transform function then let's use it
+          text = lastFrame.innerText !== undefined ? lastFrame.innerText : text;
+        }
+
+        if (options.disallowedTagsMode === 'discard' && (tag === 'script' || tag === 'style')) {
+          // htmlparser2 gives us these as-is. Escaping them ruins the content. Allowing
+          // script tags is, by definition, game over for XSS protection, so if that's
+          // your concern, don't allow them. The same is essentially true for style tags
+          // which have their own collection of XSS vectors.
+          result += text;
+        } else {
+          const escaped = escapeHtml(text, false);
+          if (options.textFilter && !addedText) {
+            result += options.textFilter(escaped, tag);
+          } else if (!addedText) {
+            result += escaped;
+          }
+        }
+        if (stack.length) {
+          const frame = stack[stack.length - 1];
+          frame.text += text;
+        }
+      },
+      onclosetag: function (name) {
+        if (skipText) {
+          skipTextDepth--;
+          if (!skipTextDepth) {
+            skipText = false;
+          } else {
+            return;
+          }
+        }
+
+        const frame = stack.pop();
+        if (!frame) {
+          // Do not crash on bad markup
+          return;
+        }
+        skipText = options.enforceHtmlBoundary ? name === 'html' : false;
+        depth--;
+        const skip = skipMap[depth];
+        if (skip) {
+          delete skipMap[depth];
+          if (options.disallowedTagsMode === 'discard') {
+            frame.updateParentNodeText();
+            return;
+          }
+          tempResult = result;
+          result = '';
+        }
+
+        if (transformMap[depth]) {
+          name = transformMap[depth];
+          delete transformMap[depth];
+        }
+
+        if (options.exclusiveFilter && options.exclusiveFilter(frame)) {
+          result = result.substr(0, frame.tagPosition);
+          return;
+        }
+
+        frame.updateParentNodeMediaChildren();
+        frame.updateParentNodeText();
+
+        if (options.selfClosing.indexOf(name) !== -1) {
+          // Already output />
+          if (skip) {
+            result = tempResult;
+            tempResult = '';
+          }
+          return;
+        }
+
+        result += '</' + name + '>';
+        if (skip) {
+          result = tempResult + escapeHtml(result);
+          tempResult = '';
+        }
+        addedText = false;
+      },
+    },
+    options.parser
+  );
   parser.write(html);
   parser.end();
 
@@ -601,25 +600,28 @@ function sanitizeHtml(html, options, _recursing) {
   }
 
   function escapeHtml(s, quote) {
-    if (typeof (s) !== 'string') {
+    if (typeof s !== 'string') {
       s = s + '';
     }
-    if (options.parser.decodeEntities) {
-      s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (enableDecode) {
+      if (options.parser.decodeEntities) {
+        s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        if (quote) {
+          s = s.replace(/"/g, '&quot;');
+        }
+      }
+      // TODO: this is inadequate because it will pass `&0;`. This approach
+      // will not work, each & must be considered with regard to whether it
+      // is followed by a 100% syntactically valid entity or not, and escaped
+      // if it is not. If this bothers you, don't set parser.decodeEntities
+      // to false. (The default is true.)
+      s = s
+        .replace(/&(?![a-zA-Z0-9#]{1,20};)/g, '&amp;') // Match ampersands not part of existing HTML entity
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
       if (quote) {
         s = s.replace(/"/g, '&quot;');
       }
-    }
-    // TODO: this is inadequate because it will pass `&0;`. This approach
-    // will not work, each & must be considered with regard to whether it
-    // is followed by a 100% syntactically valid entity or not, and escaped
-    // if it is not. If this bothers you, don't set parser.decodeEntities
-    // to false. (The default is true.)
-    s = s.replace(/&(?![a-zA-Z0-9#]{1,20};)/g, '&amp;') // Match ampersands not part of existing HTML entity
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    if (quote) {
-      s = s.replace(/"/g, '&quot;');
     }
     return s;
   }
@@ -675,10 +677,7 @@ function sanitizeHtml(html, options, _recursing) {
 
     // Merge global and tag-specific styles into new AST.
     if (allowedStyles[astRules.selector] && allowedStyles['*']) {
-      selectedRule = deepmerge(
-        allowedStyles[astRules.selector],
-        allowedStyles['*']
-      );
+      selectedRule = deepmerge(allowedStyles[astRules.selector], allowedStyles['*']);
     } else {
       selectedRule = allowedStyles[astRules.selector] || allowedStyles['*'];
     }
@@ -699,32 +698,30 @@ function sanitizeHtml(html, options, _recursing) {
    */
   function stringifyStyleAttributes(filteredAST) {
     return filteredAST.nodes[0].nodes
-      .reduce(function(extractedAttributes, attrObject) {
-        extractedAttributes.push(
-          `${attrObject.prop}:${attrObject.value}${attrObject.important ? ' !important' : ''}`
-        );
+      .reduce(function (extractedAttributes, attrObject) {
+        extractedAttributes.push(`${attrObject.prop}:${attrObject.value}${attrObject.important ? ' !important' : ''}`);
         return extractedAttributes;
       }, [])
       .join(';');
   }
 
   /**
-    * Filters the existing attributes for the given property. Discards any attributes
-    * which don't match the allowlist.
-    *
-    * @param  {object} selectedRule             - Example: { color: red, font-family: helvetica }
-    * @param  {array} allowedDeclarationsList   - List of declarations which pass the allowlist.
-    * @param  {object} attributeObject          - Object representing the current css property.
-    * @property {string} attributeObject.type   - Typically 'declaration'.
-    * @property {string} attributeObject.prop   - The CSS property, i.e 'color'.
-    * @property {string} attributeObject.value  - The corresponding value to the css property, i.e 'red'.
-    * @return {function}                        - When used in Array.reduce, will return an array of Declaration objects
-    */
+   * Filters the existing attributes for the given property. Discards any attributes
+   * which don't match the allowlist.
+   *
+   * @param  {object} selectedRule             - Example: { color: red, font-family: helvetica }
+   * @param  {array} allowedDeclarationsList   - List of declarations which pass the allowlist.
+   * @param  {object} attributeObject          - Object representing the current css property.
+   * @property {string} attributeObject.type   - Typically 'declaration'.
+   * @property {string} attributeObject.prop   - The CSS property, i.e 'color'.
+   * @property {string} attributeObject.value  - The corresponding value to the css property, i.e 'red'.
+   * @return {function}                        - When used in Array.reduce, will return an array of Declaration objects
+   */
   function filterDeclarations(selectedRule) {
     return function (allowedDeclarationsList, attributeObject) {
       // If this property is allowlisted...
       if (has(selectedRule, attributeObject.prop)) {
-        const matchesRegex = selectedRule[attributeObject.prop].some(function(regularExpression) {
+        const matchesRegex = selectedRule[attributeObject.prop].some(function (regularExpression) {
           return regularExpression.test(attributeObject.value);
         });
 
@@ -742,11 +739,16 @@ function sanitizeHtml(html, options, _recursing) {
       return classes;
     }
     classes = classes.split(/\s+/);
-    return classes.filter(function(clss) {
-      return allowed.indexOf(clss) !== -1 || allowedGlobs.some(function(glob) {
-        return glob.test(clss);
-      });
-    }).join(' ');
+    return classes
+      .filter(function (clss) {
+        return (
+          allowed.indexOf(clss) !== -1 ||
+          allowedGlobs.some(function (glob) {
+            return glob.test(clss);
+          })
+        );
+      })
+      .join(' ');
   }
 }
 
@@ -754,7 +756,7 @@ function sanitizeHtml(html, options, _recursing) {
 // programmatically if you wish
 
 const htmlParserDefaults = {
-  decodeEntities: true
+  decodeEntities: true,
 };
 sanitizeHtml.defaults = {
   allowedTags: [
@@ -762,43 +764,103 @@ sanitizeHtml.defaults = {
     // benign categories.
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element
     // Content sectioning
-    'address', 'article', 'aside', 'footer', 'header',
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hgroup',
-    'main', 'nav', 'section',
+    'address',
+    'article',
+    'aside',
+    'footer',
+    'header',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'hgroup',
+    'main',
+    'nav',
+    'section',
     // Text content
-    'blockquote', 'dd', 'div', 'dl', 'dt', 'figcaption', 'figure',
-    'hr', 'li', 'main', 'ol', 'p', 'pre', 'ul',
+    'blockquote',
+    'dd',
+    'div',
+    'dl',
+    'dt',
+    'figcaption',
+    'figure',
+    'hr',
+    'li',
+    'main',
+    'ol',
+    'p',
+    'pre',
+    'ul',
     // Inline text semantics
-    'a', 'abbr', 'b', 'bdi', 'bdo', 'br', 'cite', 'code', 'data', 'dfn',
-    'em', 'i', 'kbd', 'mark', 'q',
-    'rb', 'rp', 'rt', 'rtc', 'ruby',
-    's', 'samp', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var', 'wbr',
+    'a',
+    'abbr',
+    'b',
+    'bdi',
+    'bdo',
+    'br',
+    'cite',
+    'code',
+    'data',
+    'dfn',
+    'em',
+    'i',
+    'kbd',
+    'mark',
+    'q',
+    'rb',
+    'rp',
+    'rt',
+    'rtc',
+    'ruby',
+    's',
+    'samp',
+    'small',
+    'span',
+    'strong',
+    'sub',
+    'sup',
+    'time',
+    'u',
+    'var',
+    'wbr',
     // Table content
-    'caption', 'col', 'colgroup', 'table', 'tbody', 'td', 'tfoot', 'th',
-    'thead', 'tr'
+    'caption',
+    'col',
+    'colgroup',
+    'table',
+    'tbody',
+    'td',
+    'tfoot',
+    'th',
+    'thead',
+    'tr',
   ],
   disallowedTagsMode: 'discard',
   allowedAttributes: {
-    a: [ 'href', 'name', 'target' ],
+    a: ['href', 'name', 'target'],
     // We don't currently allow img itself by default, but
     // these attributes would make sense if we did.
-    img: [ 'src', 'srcset', 'alt', 'title', 'width', 'height', 'loading' ]
+    img: ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
   },
   // Lots of these won't come up by default because we don't allow them
-  selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta' ],
+  selfClosing: ['img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta'],
   // URL schemes we permit
-  allowedSchemes: [ 'http', 'https', 'ftp', 'mailto', 'tel' ],
+  allowedSchemes: ['http', 'https', 'ftp', 'mailto', 'tel'],
   allowedSchemesByTag: {},
-  allowedSchemesAppliedToAttributes: [ 'href', 'src', 'cite' ],
+  allowedSchemesAppliedToAttributes: ['href', 'src', 'cite'],
   allowProtocolRelative: true,
-  enforceHtmlBoundary: false
+  enforceHtmlBoundary: false,
+  enableDecode: false,
 };
 
-sanitizeHtml.simpleTransform = function(newTagName, newAttribs, merge) {
-  merge = (merge === undefined) ? true : merge;
+sanitizeHtml.simpleTransform = function (newTagName, newAttribs, merge) {
+  merge = merge === undefined ? true : merge;
   newAttribs = newAttribs || {};
 
-  return function(tagName, attribs) {
+  return function (tagName, attribs) {
     let attrib;
     if (merge) {
       for (attrib in newAttribs) {
@@ -810,7 +872,7 @@ sanitizeHtml.simpleTransform = function(newTagName, newAttribs, merge) {
 
     return {
       tagName: newTagName,
-      attribs: attribs
+      attribs: attribs,
     };
   };
 };
