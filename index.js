@@ -603,7 +603,7 @@ function sanitizeHtml(html, options, _recursing) {
     if (typeof s !== 'string') {
       s = s + '';
     }
-    if (enableDecode) {
+    if (options.enableDecode) {
       if (options.parser.decodeEntities) {
         s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         if (quote) {
